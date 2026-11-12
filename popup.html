@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Diet</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div>
+        <h1 class="popup-title">YouTube Diet</h1>
+        <p class="popup-subtitle" id="current-date-label">Today's Watch-Time Balance</p>
+      </div>
+      <span class="bank-pill" id="header-bank-pill">Bank: 15:00</span>
+    </header>
+
+    <!-- Today's Watch-Time Breakdown -->
+    <section class="card">
+      <div class="stats-grid">
+        <div class="stat-box stat-edu">
+          <span class="stat-label">Educational</span>
+          <strong class="stat-value" id="edu-time-value">0:00</strong>
+          <span class="stat-sub" id="edu-pct-value">Actual: 50%</span>
+        </div>
+        <div class="stat-box stat-ent">
+          <span class="stat-label">Entertainment</span>
+          <strong class="stat-value" id="ent-time-value">0:00</strong>
+          <span class="stat-sub" id="ent-pct-value">Actual: 50%</span>
+        </div>
+      </div>
+
+      <div class="ratio-bar-wrapper">
+        <div class="ratio-bar-labels">
+          <span id="actual-split-label">Actual: 50% Edu / 50% Ent</span>
+          <span id="target-split-label">Target: 50% / 50%</span>
+        </div>
+        <div class="ratio-bar-track">
+          <div class="ratio-bar-fill-edu" id="actual-edu-bar" style="width: 50%"></div>
+          <div class="ratio-target-marker" id="target-edu-marker" style="left: 50%" title="Target Educational %"></div>
+        </div>
+      </div>
+
+      <div class="bank-summary-row">
+        <span>Remaining Entertainment Bank:</span>
+        <strong id="remaining-bank-detail">15:00</strong>
+      </div>
+    </section>
+
+    <!-- Diet & Ratio Settings -->
+    <section class="card">
+      <h2 class="section-title">Diet Settings</h2>
+
+      <div class="control-group">
+        <div class="control-header">
+          <label for="target-edu-slider">Target Split</label>
+          <span class="control-badge" id="slider-split-display">50% Edu / 50% Ent</span>
+        </div>
+        <input
+          type="range"
+          id="target-edu-slider"
+          min="20"
+          max="80"
+          step="5"
+          value="50"
+        />
+        <div class="slider-ticks">
+          <span>20/80</span>
+          <span>50/50</span>
+          <span>80/20</span>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div>
+          <label for="grace-buffer-input" class="row-label">Daily Grace Buffer (min)</label>
+          <p class="row-hint">Starting entertainment allowance each day</p>
+        </div>
+        <input
+          type="number"
+          id="grace-buffer-input"
+          class="number-input"
+          min="0"
+          max="180"
+          step="5"
+          value="15"
+        />
+      </div>
+
+      <div class="control-row">
+        <div>
+          <label for="enforcement-toggle" class="row-label">Strict Budget Enforcement</label>
+          <p class="row-hint" id="enforcement-mode-hint">Pause &amp; lock player when bank hits 0:00</p>
+        </div>
+        <input type="checkbox" id="enforcement-toggle" class="toggle-checkbox" checked />
+      </div>
+    </section>
+
+    <!-- Channel Overrides -->
+    <section class="card">
+      <div class="section-header-row">
+        <h2 class="section-title">Saved Channel Overrides</h2>
+        <span class="override-count" id="override-count-badge">0</span>
+      </div>
+
+      <form id="add-override-form" class="override-form">
+        <input
+          type="text"
+          id="override-channel-input"
+          class="text-input"
+          placeholder="Channel name or @handle"
+          required
+        />
+        <select id="override-type-select" class="select-input">
+          <option value="educational">Educational</option>
+          <option value="entertainment">Entertainment</option>
+        </select>
+        <button type="submit" class="btn-add">Pin</button>
+      </form>
+
+      <ul id="channel-override-list" class="override-list"></ul>
+    </section>
+  </div>
+
+  <script src="src/ledger.js"></script>
+  <script src="src/classifier.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

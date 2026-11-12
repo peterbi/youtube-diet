@@ -1,0 +1,221 @@
+/* YouTube Diet — Floating HUD Pill & In-Player Enforcement Overlay */
+
+.yt-diet-hud {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 2147483640;
+  display: flex;
+  align-items: center;
+  background: rgba(15, 17, 23, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 6px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-family: "YouTube Sans", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.yt-diet-hud:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.yt-diet-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yt-diet-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.yt-diet-badge-edu {
+  background: rgba(16, 185, 129, 0.22);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.yt-diet-badge-ent {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.yt-diet-metric {
+  color: #e2e8f0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.yt-diet-divider {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.yt-diet-bank {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #38bdf8;
+  white-space: nowrap;
+}
+
+.yt-diet-bank-warn {
+  color: #fbbf24;
+}
+
+.yt-diet-bank-depleted {
+  color: #f87171;
+}
+
+.yt-diet-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.yt-diet-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.yt-diet-btn-pin {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.32);
+  color: #bae6fd;
+}
+
+.yt-diet-btn-pin:hover {
+  background: rgba(56, 189, 248, 0.24);
+}
+
+/* In-Player Budget Depleted Overlay */
+.yt-diet-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2147483635;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 11, 17, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 24px;
+  font-family: "YouTube Sans", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #f8fafc;
+}
+
+.yt-diet-overlay-card {
+  max-width: 480px;
+  width: 100%;
+  background: #141824;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  padding: 24px 28px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+}
+
+.yt-diet-overlay-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.16);
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.yt-diet-overlay-title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.yt-diet-overlay-desc {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.yt-diet-overlay-stats {
+  margin: 0 0 20px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.yt-diet-overlay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.yt-diet-overlay-btn {
+  appearance: none;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.yt-diet-overlay-btn-primary {
+  background: #10b981;
+  color: #052e16;
+}
+
+.yt-diet-overlay-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.yt-diet-overlay-btn-secondary {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.yt-diet-overlay-btn-secondary:hover {
+  background: rgba(56, 189, 248, 0.26);
+}
+
+.yt-diet-overlay-btn-ghost {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.yt-diet-overlay-btn-ghost:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+}

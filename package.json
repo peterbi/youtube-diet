@@ -1,0 +1,12 @@
+{
+  "name": "youtube-diet",
+  "version": "1.0.0",
+  "description": "Manifest V3 browser extension for YouTube to balance watch time between educational and entertainment videos.",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

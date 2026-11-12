@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Diet",
+  "version": "1.0.0",
+  "description": "Control the composition of time spent on YouTube between educational and entertainment videos (default 50/50 split).",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "action": {
+    "default_title": "YouTube Diet — Watch-Time Balance",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "src/ledger.js",
+        "src/classifier.js",
+        "src/content.js"
+      ],
+      "css": [
+        "src/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
