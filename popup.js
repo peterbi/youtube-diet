@@ -38,6 +38,9 @@
       graceBufferInput: doc.getElementById('grace-buffer-input'),
       enforcementToggle: doc.getElementById('enforcement-toggle'),
       enforcementModeHint: doc.getElementById('enforcement-mode-hint'),
+      classificationModeSelect: doc.getElementById('classification-mode-select'),
+      classificationModeHint: doc.getElementById('classification-mode-hint'),
+      overrideSectionTitle: doc.getElementById('override-section-title'),
       overrideCountBadge: doc.getElementById('override-count-badge'),
       addOverrideForm: doc.getElementById('add-override-form'),
       overrideChannelInput: doc.getElementById('override-channel-input'),
@@ -118,6 +121,24 @@
         els.enforcementModeHint.textContent = state.settings.enforcementEnabled
           ? 'Strict block: pause & lock player when bank hits 0:00'
           : 'Gentle warning: show HUD status without pausing video';
+      }
+
+      const mode =
+        state.settings.classificationMode === 'channels-only' ? 'channels-only' : 'heuristics';
+      if (els.classificationModeSelect) {
+        els.classificationModeSelect.value = mode;
+      }
+      if (els.classificationModeHint) {
+        els.classificationModeHint.textContent =
+          mode === 'channels-only'
+            ? 'Only user-defined channels vs. everything else (Entertainment)'
+            : 'Auto category & keyword heuristics + pinned channels';
+      }
+      if (els.overrideSectionTitle) {
+        els.overrideSectionTitle.textContent =
+          mode === 'channels-only'
+            ? 'User-Defined Channels (vs. Everything Else)'
+            : 'Saved Channel Overrides';
       }
 
       renderOverrides(state.channelOverrides || {});
@@ -251,6 +272,24 @@
       });
     }
 
+    if (els.classificationModeSelect) {
+      els.classificationModeSelect.addEventListener('change', async (e) => {
+        const mode = Ledger.normalizeClassificationMode
+          ? Ledger.normalizeClassificationMode(e.target.value)
+          : e.target.value === 'channels-only'
+          ? 'channels-only'
+          : 'heuristics';
+        const { state } = await Ledger.updateState(
+          (draft) => {
+            draft.settings.classificationMode = mode;
+            return draft;
+          },
+          { storage }
+        );
+        render(state);
+      });
+    }
+
     if (els.addOverrideForm) {
       els.addOverrideForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -294,6 +333,16 @@
           if (newVal) {
             render(Ledger.ensureDailyLedger(newVal));
           }
+        }
+      });
+    } else if (typeof window !== 'undefined') {
+      const refreshFromStorage = () => {
+        Ledger.loadState({ storage }).then(render);
+      };
+      window.addEventListener('yt-diet-storage-updated', refreshFromStorage);
+      window.addEventListener('storage', (e) => {
+        if (!e.key || e.key === Ledger.STORAGE_KEY) {
+          refreshFromStorage();
         }
       });
     }

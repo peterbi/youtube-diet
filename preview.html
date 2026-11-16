@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Diet — Interactive Extension Preview & Sandbox</title>
+  <link rel="stylesheet" href="src/content.css" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #090b10;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+    }
+    .preview-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: #0f1117;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .preview-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-brand h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .preview-pill {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .sim-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sim-btn {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #161a24;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .sim-btn:hover {
+      background: #1f2533;
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    .sim-btn-edu {
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(52, 211, 153, 0.35);
+      color: #34d399;
+    }
+    .sim-btn-ent {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(251, 191, 36, 0.35);
+      color: #fbbf24;
+    }
+    .sim-btn-danger {
+      background: rgba(248, 113, 113, 0.14);
+      border-color: rgba(248, 113, 113, 0.35);
+      color: #f87171;
+    }
+    .preview-layout {
+      display: grid;
+      grid-template-columns: 1fr 392px;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .preview-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .yt-stage-card {
+      background: #0f1117;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+    }
+    .yt-fake-urlbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #141822;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .yt-player-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: radial-gradient(circle at 30% 30%, #1e293b, #090d16 75%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 24px;
+      text-align: center;
+    }
+    .player-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+    .pulse-dot.paused {
+      background: #f59e0b;
+      box-shadow: none;
+    }
+    .player-video-title {
+      max-width: 640px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0 0 8px;
+      line-height: 1.35;
+    }
+    .player-video-sub {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0 0 18px;
+    }
+    .player-controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .play-toggle-btn {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #38bdf8;
+      color: #082f49;
+    }
+    .yt-meta-panel {
+      padding: 18px 20px;
+    }
+    .preset-section-title {
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+    }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .preset-card {
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #161a24;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .preset-card:hover,
+    .preset-card.active {
+      background: #1e2433;
+      border-color: #38bdf8;
+    }
+    .preset-card-type {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+    .preset-card-type.edu {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+    .preset-card-type.ent {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+    .preset-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+    .preset-card-meta {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .classifier-inspector {
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #141822;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      line-height: 1.5;
+      color: #cbd5e1;
+    }
+    .popup-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .popup-column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+    }
+    .popup-column-header a {
+      color: #38bdf8;
+      text-decoration: none;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .popup-iframe-wrap {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+      background: #0f1117;
+    }
+    .popup-iframe {
+      display: block;
+      width: 360px;
+      height: 610px;
+      border: none;
+      margin: 0 auto;
+    }
+    /* Keep the HUD pill anchored inside the simulated viewport on the preview page */
+    .yt-player-viewport .yt-diet-hud {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 30;
+    }
+  </style>
+</head>
+<body>
+  <header class="preview-topbar">
+    <div class="preview-brand">
+      <h1>YouTube Diet — Interactive Preview</h1>
+      <span class="preview-pill">Manifest V3 Sandbox</span>
+    </div>
+    <div class="sim-toolbar">
+      <button type="button" class="sim-btn sim-btn-edu" id="btn-add-edu-1m">+1m Educational</button>
+      <button type="button" class="sim-btn sim-btn-edu" id="btn-add-edu-5m">+5m Educational</button>
+      <button type="button" class="sim-btn sim-btn-ent" id="btn-add-ent-5m">+5m Entertainment</button>
+      <button type="button" class="sim-btn sim-btn-danger" id="btn-deplete-bank">Deplete Ent Bank (0:00)</button>
+      <button type="button" class="sim-btn" id="btn-reset-day">Reset Today</button>
+    </div>
+  </header>
+
+  <main class="preview-layout">
+    <!-- Left: Simulated YouTube Watch Page + In-Player Overlay + Floating HUD Pill -->
+    <section class="yt-stage-card">
+      <div class="yt-fake-urlbar">
+        <span id="fake-url-text">https://www.youtube.com/watch?v=mit-linalg-01</span>
+        <span>1s Live Watch-Time Heartbeat</span>
+      </div>
+
+      <div class="yt-player-viewport" id="movie_player">
+        <div class="player-status-chip">
+          <span class="pulse-dot" id="playback-dot"></span>
+          <span id="playback-status-text">Playing (1x Real-Time Accrual)</span>
+        </div>
+        <h2 class="player-video-title" id="stage-video-title">Lecture 1: Geometry of Linear Equations — MIT 18.06</h2>
+        <p class="player-video-sub" id="stage-video-sub">MIT OpenCourseWare • Category: Education</p>
+        <div class="player-controls-bar">
+          <button type="button" class="play-toggle-btn" id="btn-toggle-play">Pause Video</button>
+        </div>
+      </div>
+
+      <div class="yt-meta-panel">
+        <h3 class="preset-section-title">Switch Simulated YouTube Video</h3>
+        <div class="preset-grid" id="preset-grid"></div>
+
+        <div class="classifier-inspector" id="classifier-inspector"></div>
+      </div>
+    </section>
+
+    <!-- Right: Live Extension Popup -->
+    <aside class="popup-column">
+      <div class="popup-column-header">
+        <span>Extension Popup (`popup.html`)</span>
+        <a href="popup.html" target="_blank" rel="noopener">Open Standalone ↗</a>
+      </div>
+      <div class="popup-iframe-wrap">
+        <iframe src="popup.html" class="popup-iframe" id="popup-frame" title="YouTube Diet Popup"></iframe>
+      </div>
+    </aside>
+  </main>
+
+  <script src="src/ledger.js"></script>
+  <script src="src/classifier.js"></script>
+  <script>
+    (function () {
+      const Ledger = window.YouTubeDietLedger;
+      const Classifier = window.YouTubeDietClassifier;
+
+      const PRESET_VIDEOS = [
+        {
+          videoId: 'mit-linalg-01',
+          title: 'Lecture 1: Geometry of Linear Equations — MIT 18.06 Full Course',
+          category: 'Education',
+          channelId: 'UCEBb1b_L6zDS3xTUrIALZOw',
+          channelName: 'MIT OpenCourseWare',
+          description: 'Gilbert Strang lectures on linear algebra and systems of equations.'
+        },
+        {
+          videoId: 'raft-consensus-02',
+          title: 'Distributed Systems Explained: Raft Consensus Algorithm Tutorial',
+          category: 'Science & Technology',
+          channelId: 'UC_SYSTEMS_ACADEMY',
+          channelName: 'Systems Engineering',
+          description: 'Deep dive architecture tutorial into leader election and log replication.'
+        },
+        {
+          videoId: 'mc-hardcore-03',
+          title: 'I Survived 100 Days in Ultra Hardcore Minecraft Gameplay Highlights!',
+          category: 'Gaming',
+          channelId: 'UC_GAMING_PRO',
+          channelName: 'PixelCraft Gaming',
+          description: 'Funny moments, boss fights, and epic gameplay highlights.'
+        },
+        {
+          videoId: 'prank-vlog-04',
+          title: '24 Hour Overnight Mall Challenge Prank Vlog with Friends!',
+          category: 'Entertainment',
+          channelId: 'UC_DAILY_VLOGS',
+          channelName: 'Daily Hype Vlogs',
+          description: 'Extreme hide and seek challenge and reaction.'
+        },
+        {
+          videoId: 'summoning-salt-05',
+          title: 'The History of Super Mario 64 World Records — Full Documentary',
+          category: 'Gaming',
+          channelId: 'UCtUbO6rBht0daVIOGML3c8w',
+          channelName: 'Summoning Salt',
+          description: 'An in-depth documentary history explained of speedrunning progression.'
+        }
+      ];
+
+      let activeVideo = PRESET_VIDEOS[0];
+      let isPlaying = true;
+      let currentState = Ledger.createInitialState();
+      let currentClassification = Classifier.classifyVideo(activeVideo);
+
+      const playerEl = document.getElementById('movie_player');
+      const fakeUrlEl = document.getElementById('fake-url-text');
+      const stageTitleEl = document.getElementById('stage-video-title');
+      const stageSubEl = document.getElementById('stage-video-sub');
+      const playbackDotEl = document.getElementById('playback-dot');
+      const playbackStatusEl = document.getElementById('playback-status-text');
+      const playToggleBtn = document.getElementById('btn-toggle-play');
+      const presetGridEl = document.getElementById('preset-grid');
+      const inspectorEl = document.getElementById('classifier-inspector');
+      const popupFrame = document.getElementById('popup-frame');
+
+      // Create HUD Pill inside the simulated player viewport
+      const hud = document.createElement('div');
+      hud.id = 'yt-diet-hud';
+      hud.className = 'yt-diet-hud';
+      hud.innerHTML = `
+        <div class="yt-diet-hud-row">
+          <span class="yt-diet-badge" data-role="badge">Educational</span>
+          <span class="yt-diet-metric" data-role="split">Edu 50% / Ent 50%</span>
+          <span class="yt-diet-divider">•</span>
+          <span class="yt-diet-bank" data-role="bank">Ent Bank: 15:00</span>
+          <button type="button" class="yt-diet-btn" data-action="toggle-video">Mark Video Ent</button>
+          <button type="button" class="yt-diet-btn yt-diet-btn-pin" data-action="pin-channel">Always Ent Channel</button>
+        </div>
+      `;
+      playerEl.appendChild(hud);
+
+      // Create In-Player Budget Depleted Overlay inside the simulated player viewport
+      const overlay = document.createElement('div');
+      overlay.id = 'yt-diet-overlay';
+      overlay.className = 'yt-diet-overlay';
+      overlay.style.display = 'none';
+      overlay.innerHTML = `
+        <div class="yt-diet-overlay-card">
+          <div class="yt-diet-overlay-tag">YouTube Diet • Budget Reached</div>
+          <h2 class="yt-diet-overlay-title">Entertainment Bank Depleted (0:00)</h2>
+          <p class="yt-diet-overlay-desc" data-role="overlay-explanation"></p>
+          <div class="yt-diet-overlay-stats" data-role="overlay-stats"></div>
+          <div class="yt-diet-overlay-actions">
+            <button type="button" class="yt-diet-overlay-btn yt-diet-overlay-btn-primary" data-overlay-action="reclassify-video">
+              This Video is Educational
+            </button>
+            <button type="button" class="yt-diet-overlay-btn yt-diet-overlay-btn-secondary" data-overlay-action="reclassify-channel">
+              Always Mark Channel Educational
+            </button>
+            <button type="button" class="yt-diet-overlay-btn yt-diet-overlay-btn-ghost" data-overlay-action="snooze">
+              Emergency Snooze (+5m)
+            </button>
+          </div>
+        </div>
+      `;
+      playerEl.appendChild(overlay);
+
+      function notifyPopupIframe() {
+        if (popupFrame && popupFrame.contentWindow) {
+          popupFrame.contentWindow.dispatchEvent(new CustomEvent('yt-diet-storage-updated'));
+        }
+      }
+
+      async function mutateLedger(mutator) {
+        const { state } = await Ledger.updateState(mutator);
+        currentState = state;
+        refreshAll();
+        notifyPopupIframe();
+      }
+
+      function renderPresetCards() {
+        presetGridEl.innerHTML = '';
+        for (const v of PRESET_VIDEOS) {
+          const cls = Classifier.classifyVideo(v, {
+            channelOverrides: currentState.channelOverrides,
+            videoOverrides: currentState.videoOverrides,
+            classificationMode: currentState.settings.classificationMode,
+            defaultCategory: currentState.settings.defaultCategory
+          });
+          const isEdu = cls.classification === 'educational';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `preset-card ${v.videoId === activeVideo.videoId ? 'active' : ''}`;
+          btn.innerHTML = `
+            <span class="preset-card-type ${isEdu ? 'edu' : 'ent'}">${cls.classification}</span>
+            <div class="preset-card-title">${v.title}</div>
+            <div class="preset-card-meta">${v.channelName} • ${v.category}</div>
+          `;
+          btn.addEventListener('click', () => {
+            activeVideo = v;
+            isPlaying = true;
+            refreshAll();
+          });
+          presetGridEl.appendChild(btn);
+        }
+      }
+
+      function refreshAll() {
+        currentClassification = Classifier.classifyVideo(activeVideo, {
+          channelOverrides: currentState.channelOverrides,
+          videoOverrides: currentState.videoOverrides,
+          classificationMode: currentState.settings.classificationMode,
+          defaultCategory: currentState.settings.defaultCategory
+        });
+
+        const stats = Ledger.getStateStats(currentState);
+        const isEdu = currentClassification.classification === 'educational';
+        const oppositeLabel = isEdu ? 'Ent' : 'Edu';
+
+        // Check if strict enforcement blocks playback
+        const shouldBlock =
+          currentState.settings.enforcementEnabled &&
+          currentClassification.classification === 'entertainment' &&
+          !stats.isSnoozed &&
+          stats.isDepleted;
+
+        if (shouldBlock && isPlaying) {
+          isPlaying = false;
+        }
+
+        fakeUrlEl.textContent = `https://www.youtube.com/watch?v=${activeVideo.videoId}`;
+        stageTitleEl.textContent = activeVideo.title;
+        stageSubEl.textContent = `${activeVideo.channelName} • YouTube Category: ${activeVideo.category}`;
+
+        playbackDotEl.classList.toggle('paused', !isPlaying);
+        playbackStatusEl.textContent = shouldBlock
+          ? 'Paused by YouTube Diet (Entertainment Bank 0:00)'
+          : isPlaying
+          ? `Playing (${isEdu ? 'Accruing Educational' : 'Spending Entertainment Bank'})`
+          : 'Paused';
+        playToggleBtn.textContent = isPlaying ? 'Pause Video' : 'Play Video';
+
+        // Update HUD Pill
+        const badgeEl = hud.querySelector('[data-role="badge"]');
+        const splitEl = hud.querySelector('[data-role="split"]');
+        const bankEl = hud.querySelector('[data-role="bank"]');
+        const toggleVideoBtn = hud.querySelector('[data-action="toggle-video"]');
+        const pinChannelBtn = hud.querySelector('[data-action="pin-channel"]');
+
+        badgeEl.textContent = isEdu ? 'Educational' : 'Entertainment';
+        badgeEl.className = `yt-diet-badge ${isEdu ? 'yt-diet-badge-edu' : 'yt-diet-badge-ent'}`;
+        splitEl.textContent = `Edu ${stats.actualEduPct}% / Ent ${stats.actualEntPct}%`;
+
+        if (stats.isSnoozed) {
+          bankEl.textContent = `Snoozed (${Ledger.formatClock(stats.snoozeRemainingSeconds)})`;
+          bankEl.className = 'yt-diet-bank yt-diet-bank-warn';
+        } else {
+          bankEl.textContent = `Ent Bank: ${Ledger.formatClock(stats.remainingBankSeconds)}`;
+          bankEl.className = `yt-diet-bank ${stats.isDepleted ? 'yt-diet-bank-depleted' : ''}`;
+        }
+
+        toggleVideoBtn.textContent = `Mark Video ${oppositeLabel}`;
+        pinChannelBtn.textContent =
+          currentClassification.source === 'channel-override'
+            ? `Channel Pinned (${isEdu ? 'Edu' : 'Ent'})`
+            : `Always ${oppositeLabel} Channel`;
+
+        // Update In-Player Overlay
+        overlay.style.display = shouldBlock ? 'flex' : 'none';
+        if (shouldBlock) {
+          const explanationEl = overlay.querySelector('[data-role="overlay-explanation"]');
+          const statsEl = overlay.querySelector('[data-role="overlay-stats"]');
+          explanationEl.textContent =
+            `Your target split is ${stats.targetEduPct}% Educational / ${stats.targetEntPct}% Entertainment. ` +
+            `Watch ${Ledger.formatDuration(stats.eduSecondsToUnlockOneMin)} of educational videos to unlock 1 minute of entertainment ` +
+            `(or ${Ledger.formatDuration(stats.eduSecondsToUnlockFiveMin)} for 5 minutes).`;
+          statsEl.textContent =
+            `Today: ${Ledger.formatDuration(stats.educationalSeconds)} Educational (${stats.actualEduPct}%) • ` +
+            `${Ledger.formatDuration(stats.entertainmentSeconds)} Entertainment (${stats.actualEntPct}%)`;
+        }
+
+        // Update Classifier Inspector
+        inspectorEl.innerHTML = `
+          <strong>Classifier Decision:</strong> <code>${currentClassification.classification.toUpperCase()}</code>
+          (source: <code>${currentClassification.source}</code>) — ${currentClassification.reason}
+        `;
+
+        renderPresetCards();
+      }
+
+      // HUD button actions
+      hud.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        const nextClass =
+          currentClassification.classification === 'educational' ? 'entertainment' : 'educational';
+
+        if (action === 'toggle-video') {
+          mutateLedger((draft) => {
+            draft.videoOverrides = draft.videoOverrides || {};
+            draft.videoOverrides[activeVideo.videoId] = {
+              classification: nextClass,
+              title: activeVideo.title,
+              updatedAt: Date.now()
+            };
+            return draft;
+          });
+        } else if (action === 'pin-channel') {
+          const channelKey = Classifier.getChannelKey(activeVideo);
+          mutateLedger((draft) => {
+            draft.channelOverrides = draft.channelOverrides || {};
+            draft.channelOverrides[channelKey] = {
+              classification: nextClass,
+              channelId: activeVideo.channelId,
+              channelName: activeVideo.channelName,
+              updatedAt: Date.now()
+            };
+            return draft;
+          });
+        }
+      });
+
+      // Overlay button actions
+      overlay.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-overlay-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-overlay-action');
+        if (action === 'reclassify-video') {
+          isPlaying = true;
+          mutateLedger((draft) => {
+            draft.videoOverrides = draft.videoOverrides || {};
+            draft.videoOverrides[activeVideo.videoId] = {
+              classification: 'educational',
+              title: activeVideo.title,
+              updatedAt: Date.now()
+            };
+            return draft;
+          });
+        } else if (action === 'reclassify-channel') {
+          isPlaying = true;
+          const channelKey = Classifier.getChannelKey(activeVideo);
+          mutateLedger((draft) => {
+            draft.channelOverrides = draft.channelOverrides || {};
+            draft.channelOverrides[channelKey] = {
+              classification: 'educational',
+              channelId: activeVideo.channelId,
+              channelName: activeVideo.channelName,
+              updatedAt: Date.now()
+            };
+            return draft;
+          });
+        } else if (action === 'snooze') {
+          isPlaying = true;
+          mutateLedger((draft) => {
+            draft.snoozeUntil = Date.now() + 5 * 60 * 1000;
+            return draft;
+          });
+        }
+      });
+
+      // Topbar simulation buttons
+      document.getElementById('btn-add-edu-1m').addEventListener('click', () => {
+        mutateLedger((draft) => Ledger.recordWatchTime(draft, 'educational', 60).state);
+      });
+      document.getElementById('btn-add-edu-5m').addEventListener('click', () => {
+        mutateLedger((draft) => Ledger.recordWatchTime(draft, 'educational', 300).state);
+      });
+      document.getElementById('btn-add-ent-5m').addEventListener('click', () => {
+        mutateLedger((draft) => Ledger.recordWatchTime(draft, 'entertainment', 300).state);
+      });
+      document.getElementById('btn-deplete-bank').addEventListener('click', () => {
+        // Switch to an entertainment video if currently on educational so user immediately sees the lock overlay
+        if (currentClassification.classification === 'educational') {
+          activeVideo = PRESET_VIDEOS[2];
+        }
+        mutateLedger((draft) => {
+          const stats = Ledger.getStateStats(draft);
+          if (stats.remainingBankSeconds > 0) {
+            return Ledger.recordWatchTime(draft, 'entertainment', stats.remainingBankSeconds).state;
+          }
+          return draft;
+        });
+      });
+      document.getElementById('btn-reset-day').addEventListener('click', () => {
+        isPlaying = true;
+        mutateLedger((draft) => {
+          draft.currentDay = Ledger.createDailyRecord(Ledger.getLocalDateKey());
+          draft.videoOverrides = {};
+          draft.snoozeUntil = 0;
+          return draft;
+        });
+      });
+
+      playToggleBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        refreshAll();
+      });
+
+      // Listen for updates coming from the embedded popup iframe
+      window.addEventListener('yt-diet-storage-updated', () => {
+        Ledger.loadState().then((s) => {
+          currentState = s;
+          refreshAll();
+        });
+      });
+      window.addEventListener('storage', () => {
+        Ledger.loadState().then((s) => {
+          currentState = s;
+          refreshAll();
+        });
+      });
+
+      // 1-second real-time playback heartbeat
+      setInterval(() => {
+        if (!isPlaying) return;
+        const stats = Ledger.getStateStats(currentState);
+        const shouldBlock =
+          currentState.settings.enforcementEnabled &&
+          currentClassification.classification === 'entertainment' &&
+          !stats.isSnoozed &&
+          stats.isDepleted;
+        if (shouldBlock) {
+          isPlaying = false;
+          refreshAll();
+          return;
+        }
+        mutateLedger((draft) =>
+          Ledger.recordWatchTime(draft, currentClassification.classification, 1).state
+        );
+      }, 1000);
+
+      Ledger.loadState().then((s) => {
+        currentState = s;
+        refreshAll();
+      });
+    })();
+  </script>
+</body>
+</html>

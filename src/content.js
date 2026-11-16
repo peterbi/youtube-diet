@@ -96,6 +96,7 @@
       currentClassification = Classifier.classifyVideo(currentMetadata, {
         channelOverrides: currentState.channelOverrides,
         videoOverrides: currentState.videoOverrides,
+        classificationMode: currentState.settings.classificationMode,
         defaultCategory: currentState.settings.defaultCategory
       });
 
@@ -219,7 +220,11 @@
       const { state } = await Ledger.updateState(
         (draft) => {
           draft.channelOverrides = draft.channelOverrides || {};
-          draft.channelOverrides[channelKey] = {
+          const existingMatch = Classifier.findChannelOverride
+            ? Classifier.findChannelOverride(currentMetadata, draft.channelOverrides)
+            : null;
+          const targetKey = existingMatch ? existingMatch.key : channelKey;
+          draft.channelOverrides[targetKey] = {
             classification: nextClass,
             channelId: currentMetadata.channelId || '',
             channelName: currentMetadata.channelName || channelKey,

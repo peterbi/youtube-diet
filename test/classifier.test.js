@@ -90,6 +90,51 @@ test('Classifier: respects user videoOverrides and channelOverrides over heurist
   assert.equal(byVideo.source, 'video-override');
 });
 
+test('Classifier: channels-only mode only counts user-defined channels vs everything else', () => {
+  const mitLecture = {
+    videoId: 'mit-18-06',
+    title: 'Lecture 1: Linear Algebra Full Course — MIT OpenCourseWare',
+    category: 'Education',
+    channelId: 'UCEBb1b_L6zDS3xTUrIALZOw',
+    channelHandle: 'mitocw',
+    channelName: 'MIT OpenCourseWare'
+  };
+
+  // In 'channels-only' mode, even an Education lecture is treated as entertainment if channel is not in user list
+  const unlistedResult = Classifier.classifyVideo(mitLecture, {
+    classificationMode: 'channels-only',
+    channelOverrides: {}
+  });
+  assert.equal(unlistedResult.classification, 'entertainment');
+  assert.equal(unlistedResult.source, 'unlisted-channel');
+
+  // When user defines the channel by name (e.g. via popup input), it counts as educational
+  const byNameResult = Classifier.classifyVideo(mitLecture, {
+    classificationMode: 'channels-only',
+    channelOverrides: {
+      'name:mit opencourseware': {
+        classification: 'educational',
+        channelName: 'MIT OpenCourseWare'
+      }
+    }
+  });
+  assert.equal(byNameResult.classification, 'educational');
+  assert.equal(byNameResult.source, 'channel-override');
+
+  // Also matches when user defines the channel by @handle
+  const byHandleResult = Classifier.classifyVideo(mitLecture, {
+    classificationMode: 'channels-only',
+    channelOverrides: {
+      'name:@mitocw': {
+        classification: 'educational',
+        channelName: '@mitocw'
+      }
+    }
+  });
+  assert.equal(byHandleResult.classification, 'educational');
+  assert.equal(byHandleResult.source, 'channel-override');
+});
+
 test('Classifier: extracts metadata from ytInitialPlayerResponse and handles SPA URL changes', () => {
   const playerResponse = {
     videoDetails: {

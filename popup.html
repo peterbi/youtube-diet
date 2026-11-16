@@ -95,12 +95,23 @@
         </div>
         <input type="checkbox" id="enforcement-toggle" class="toggle-checkbox" checked />
       </div>
+
+      <div class="control-row">
+        <div>
+          <label for="classification-mode-select" class="row-label">Classification Mode</label>
+          <p class="row-hint" id="classification-mode-hint">Auto heuristics + pinned channels</p>
+        </div>
+        <select id="classification-mode-select" class="select-input">
+          <option value="heuristics">Auto + Channels</option>
+          <option value="channels-only">My Channels Only</option>
+        </select>
+      </div>
     </section>
 
     <!-- Channel Overrides -->
     <section class="card">
       <div class="section-header-row">
-        <h2 class="section-title">Saved Channel Overrides</h2>
+        <h2 class="section-title" id="override-section-title">Saved Channel Overrides</h2>
         <span class="override-count" id="override-count-badge">0</span>
       </div>
 

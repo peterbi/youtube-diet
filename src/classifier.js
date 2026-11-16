@@ -223,6 +223,92 @@
   }
 
   /**
+   * Normalizes a channel handle/name for flexible lookup (stripping leading '@' and 'name:').
+   * @param {string} raw
+   * @returns {string}
+   */
+  function normalizeChannelIdentifier(raw) {
+    return normalizeText(raw)
+      .replace(/^name:/, '')
+      .replace(/^@/, '')
+      .trim();
+  }
+
+  /**
+   * Finds a matching channel override entry by channelId, channelHandle, or channelName.
+   * @param {object} metadata
+   * @param {Record<string, string|{classification: string, channelName?: string, channelId?: string}>} [channelOverrides]
+   * @returns {{ key: string, classification: 'educational'|'entertainment', entry: any } | null}
+   */
+  function findChannelOverride(metadata = {}, channelOverrides = {}) {
+    if (!channelOverrides || typeof channelOverrides !== 'object') {
+      return null;
+    }
+
+    const channelId = metadata.channelId ? String(metadata.channelId).trim() : '';
+    const channelHandle = metadata.channelHandle ? String(metadata.channelHandle).trim() : '';
+    const channelName = metadata.channelName ? String(metadata.channelName).trim() : '';
+    const channelKey = getChannelKey(metadata);
+
+    const candidateKeys = [
+      channelKey,
+      channelId,
+      channelHandle,
+      channelHandle ? `name:${normalizeText(channelHandle)}` : '',
+      channelName ? `name:${normalizeText(channelName)}` : '',
+      channelName ? normalizeText(channelName) : ''
+    ].filter(Boolean);
+
+    for (const key of candidateKeys) {
+      if (channelOverrides[key]) {
+        const entry = channelOverrides[key];
+        const overrideVal = typeof entry === 'object' ? entry.classification : entry;
+        if (overrideVal === 'educational' || overrideVal === 'entertainment') {
+          return { key, classification: overrideVal, entry };
+        }
+      }
+    }
+
+    // Secondary lookup: compare normalized channelName / channelHandle / channelId against override entries
+    const targetIds = new Set(
+      [
+        channelId ? normalizeText(channelId) : '',
+        normalizeChannelIdentifier(channelId),
+        normalizeChannelIdentifier(channelHandle),
+        normalizeChannelIdentifier(channelName)
+      ].filter(Boolean)
+    );
+
+    if (targetIds.size > 0) {
+      for (const [key, entry] of Object.entries(channelOverrides)) {
+        const overrideVal = typeof entry === 'object' ? entry.classification : entry;
+        if (overrideVal !== 'educational' && overrideVal !== 'entertainment') {
+          continue;
+        }
+        const entryName =
+          typeof entry === 'object' && entry.channelName
+            ? normalizeChannelIdentifier(entry.channelName)
+            : '';
+        const entryId =
+          typeof entry === 'object' && entry.channelId
+            ? normalizeChannelIdentifier(entry.channelId)
+            : '';
+        const normKey = normalizeChannelIdentifier(key);
+
+        if (
+          (normKey && targetIds.has(normKey)) ||
+          (entryName && targetIds.has(entryName)) ||
+          (entryId && targetIds.has(entryId))
+        ) {
+          return { key, classification: overrideVal, entry };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Classifies a YouTube video given its extracted metadata and user overrides.
    *
    * @param {object} metadata
@@ -231,15 +317,17 @@
    * @param {string} [metadata.description]
    * @param {string} [metadata.category]
    * @param {string} [metadata.channelId]
+   * @param {string} [metadata.channelHandle]
    * @param {string} [metadata.channelName]
    * @param {string[]} [metadata.keywords]
    * @param {object} [options]
    * @param {Record<string, string|{classification: string, channelName?: string}>} [options.channelOverrides]
    * @param {Record<string, string|{classification: string, title?: string}>} [options.videoOverrides]
+   * @param {'heuristics'|'channels-only'} [options.classificationMode='heuristics']
    * @param {'educational'|'entertainment'} [options.defaultCategory='entertainment']
    * @returns {{
    *   classification: 'educational'|'entertainment',
-   *   source: 'video-override'|'channel-override'|'heuristic'|'default',
+   *   source: 'video-override'|'channel-override'|'unlisted-channel'|'heuristic'|'default',
    *   score: number,
    *   categoryMapped: 'educational'|'entertainment'|null,
    *   matchedEduKeywords: string[],
@@ -250,13 +338,12 @@
   function classifyVideo(metadata = {}, options = {}) {
     const videoOverrides = options.videoOverrides || {};
     const channelOverrides = options.channelOverrides || {};
+    const classificationMode =
+      options.classificationMode === 'channels-only' ? 'channels-only' : 'heuristics';
     const defaultCategory =
       options.defaultCategory === 'educational' ? 'educational' : 'entertainment';
 
     const videoId = metadata.videoId ? String(metadata.videoId).trim() : '';
-    const channelId = metadata.channelId ? String(metadata.channelId).trim() : '';
-    const channelName = metadata.channelName ? String(metadata.channelName).trim() : '';
-    const channelKey = getChannelKey(metadata);
 
     // 1. Check video-specific override
     if (videoId && videoOverrides[videoId]) {
@@ -275,30 +362,32 @@
       }
     }
 
-    // 2. Check channel override (by channelKey, channelId, or normalized channelName)
-    const candidateKeys = [
-      channelKey,
-      channelId,
-      channelName ? `name:${normalizeText(channelName)}` : '',
-      channelName ? normalizeText(channelName) : ''
-    ].filter(Boolean);
+    // 2. Check channel override (by channelKey, channelId, channelHandle, or normalized channelName)
+    const matchedChannel = findChannelOverride(metadata, channelOverrides);
+    if (matchedChannel) {
+      const overrideVal = matchedChannel.classification;
+      return {
+        classification: overrideVal,
+        source: 'channel-override',
+        score: overrideVal === 'educational' ? 100 : -100,
+        categoryMapped: mapYouTubeCategory(metadata.category),
+        matchedEduKeywords: [],
+        matchedEntKeywords: [],
+        reason: `User-defined channel (${overrideVal})`
+      };
+    }
 
-    for (const key of candidateKeys) {
-      if (channelOverrides[key]) {
-        const entry = channelOverrides[key];
-        const overrideVal = typeof entry === 'object' ? entry.classification : entry;
-        if (overrideVal === 'educational' || overrideVal === 'entertainment') {
-          return {
-            classification: overrideVal,
-            source: 'channel-override',
-            score: overrideVal === 'educational' ? 100 : -100,
-            categoryMapped: mapYouTubeCategory(metadata.category),
-            matchedEduKeywords: [],
-            matchedEntKeywords: [],
-            reason: `Channel pinned as ${overrideVal}`
-          };
-        }
-      }
+    // 3. If in 'channels-only' mode, only user-defined channels count as educational; everything else is defaultCategory (entertainment)
+    if (classificationMode === 'channels-only') {
+      return {
+        classification: defaultCategory,
+        source: 'unlisted-channel',
+        score: defaultCategory === 'educational' ? 100 : -100,
+        categoryMapped: mapYouTubeCategory(metadata.category),
+        matchedEduKeywords: [],
+        matchedEntKeywords: [],
+        reason: `Unlisted channel (Everything else → ${defaultCategory})`
+      };
     }
 
     // 3. Category + Title/Description Keyword Heuristics
@@ -534,6 +623,7 @@
     let title = details.title || (microformat.title && microformat.title.simpleText) || '';
     let category = microformat.category || '';
     let channelId = details.channelId || microformat.externalChannelId || '';
+    let channelHandle = '';
     let channelName = details.author || microformat.ownerChannelName || '';
     let description =
       details.shortDescription ||
@@ -592,22 +682,23 @@
         }
       }
 
-      if (!channelName || !channelId) {
-        const channelLink =
-          doc.querySelector('ytd-watch-metadata #owner #channel-name a') ||
-          doc.querySelector('#owner #channel-name a') ||
-          doc.querySelector('ytd-video-owner-renderer #channel-name a');
-        if (channelLink) {
-          if (!channelName && channelLink.textContent) {
-            channelName = channelLink.textContent.trim();
-          }
-          const href = channelLink.getAttribute('href') || '';
-          if (!channelId && href) {
-            const chMatch = href.match(/\/channel\/(UC[a-zA-Z0-9_-]+)/);
-            if (chMatch) {
-              channelId = chMatch[1];
-            } else if (href.startsWith('/@')) {
-              channelId = href.slice(1).split('/')[0];
+      const channelLink =
+        doc.querySelector('ytd-watch-metadata #owner #channel-name a') ||
+        doc.querySelector('#owner #channel-name a') ||
+        doc.querySelector('ytd-video-owner-renderer #channel-name a');
+      if (channelLink) {
+        if (!channelName && channelLink.textContent) {
+          channelName = channelLink.textContent.trim();
+        }
+        const href = channelLink.getAttribute('href') || '';
+        if (href) {
+          const chMatch = href.match(/\/channel\/(UC[a-zA-Z0-9_-]+)/);
+          if (chMatch && !channelId) {
+            channelId = chMatch[1];
+          } else if (href.startsWith('/@')) {
+            channelHandle = href.slice(1).split('/')[0];
+            if (!channelId) {
+              channelId = channelHandle;
             }
           }
         }
@@ -633,6 +724,7 @@
       title,
       category,
       channelId,
+      channelHandle,
       channelName,
       description,
       keywords
@@ -647,6 +739,7 @@
     ENTERTAINMENT_KEYWORDS,
     normalizeText,
     getChannelKey,
+    findChannelOverride,
     mapYouTubeCategory,
     findMatchingKeywords,
     classifyVideo,

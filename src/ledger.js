@@ -14,8 +14,18 @@
     targetEduPct: 50,
     graceBufferSeconds: 900, // 15 minutes
     enforcementEnabled: true,
+    classificationMode: 'heuristics', // 'heuristics' | 'channels-only'
     defaultCategory: 'entertainment'
   });
+
+  /**
+   * Normalizes the classification mode ('heuristics' vs 'channels-only').
+   * @param {string} [mode]
+   * @returns {'heuristics'|'channels-only'}
+   */
+  function normalizeClassificationMode(mode) {
+    return mode === 'channels-only' ? 'channels-only' : 'heuristics';
+  }
 
   /**
    * Returns a YYYY-MM-DD key in local timezone for the provided Date or timestamp.
@@ -260,6 +270,11 @@
           customSettings.graceBufferSeconds !== undefined
             ? customSettings.graceBufferSeconds
             : DEFAULT_SETTINGS.graceBufferSeconds
+        ),
+        classificationMode: normalizeClassificationMode(
+          customSettings.classificationMode !== undefined
+            ? customSettings.classificationMode
+            : DEFAULT_SETTINGS.classificationMode
         )
       },
       currentDay: createDailyRecord(dateKey),
@@ -293,6 +308,7 @@
     };
     settings.targetEduPct = normalizeTargetEduPct(settings.targetEduPct);
     settings.graceBufferSeconds = normalizeGraceBufferSeconds(settings.graceBufferSeconds);
+    settings.classificationMode = normalizeClassificationMode(settings.classificationMode);
     settings.enforcementEnabled = Boolean(
       settings.enforcementEnabled !== undefined
         ? settings.enforcementEnabled
@@ -455,7 +471,7 @@
   }
 
   /**
-   * Resolves the active storage area (chrome.storage.local or an injected mock storage).
+   * Resolves the active storage area (chrome.storage.local, browser localStorage fallback, or an injected mock storage).
    * @param {object} [customStorage]
    */
   function resolveStorage(customStorage) {
@@ -464,6 +480,40 @@
     }
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       return chrome.storage.local;
+    }
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        if (window.localStorage) {
+          return {
+            get(keys, cb) {
+              const result = {};
+              const keyList = Array.isArray(keys) ? keys : [keys];
+              for (const k of keyList) {
+                const raw = window.localStorage.getItem(k);
+                if (raw !== null) {
+                  try {
+                    result[k] = JSON.parse(raw);
+                  } catch (_) {
+                    // ignore invalid JSON
+                  }
+                }
+              }
+              cb(result);
+            },
+            set(items, cb) {
+              for (const [k, v] of Object.entries(items)) {
+                window.localStorage.setItem(k, JSON.stringify(v));
+              }
+              if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('yt-diet-storage-updated', { detail: items }));
+              }
+              if (cb) cb();
+            }
+          };
+        }
+      } catch (_) {
+        // Ignore security errors on restricted origins
+      }
     }
     return null;
   }
@@ -542,6 +592,7 @@
     getLocalDateKey,
     normalizeTargetEduPct,
     normalizeGraceBufferSeconds,
+    normalizeClassificationMode,
     computeEntertainmentAllowance,
     computeEducationalNeededToUnlock,
     computeSplitStats,
